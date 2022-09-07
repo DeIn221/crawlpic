@@ -133,7 +133,7 @@
      <attribute name="title">
       <string>Tab 2</string>
      </attribute>
-     <widget class="QLabel" name="setting_companylist">
+     <widget class="QLabel" name="label_setting_companylist">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -193,6 +193,42 @@
         <width>201</width>
         <height>131</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_setting_savingpath">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>0</y>
+        <width>60</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>存储路径</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_savingpath">
+      <property name="geometry">
+       <rect>
+        <x>330</x>
+        <y>0</y>
+        <width>321</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_choosesavingpath">
+      <property name="geometry">
+       <rect>
+        <x>552</x>
+        <y>20</y>
+        <width>101</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>选择存储路径</string>
       </property>
      </widget>
     </widget>

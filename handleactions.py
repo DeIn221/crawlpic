@@ -1,6 +1,7 @@
 # 在这里实现槽
 
 from curses import COLOR_RED
+import re
 import sys
 import os
 from tkinter import messagebox
@@ -14,6 +15,8 @@ import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import json
+from fake_useragent import UserAgent 
+import random
 
 class buttonaction():
     # 测试事件
@@ -55,19 +58,35 @@ class buttonaction():
     # 设置选项点击保存
     @pyqtSlot()
     def saveSettings(ui:Ui_MyMainWindow):
-        f = open("settings.ini","w")
-        
-        data = {}
+        #f = open("settings.ini","w")
+        # if not os.path.exists("settings.json"):
+        #     os.mknod("settings.json",0o777)
+        settings_data = {}
         companyname_list = []
         
         rowcount = ui.list_settingscompanyname.count()
-        for i in range(rowcount-1):
+        for i in range(rowcount):
             #写入配置文件
-            companyname = ui.list_settingscompanyname.item(i)
-            f.write(companyname.text()+'\n')
-        companyname = ui.list_settingscompanyname.item(max(range(rowcount)))
-        f.write(companyname.text())
-        f.close()
+            #companyname = ui.list_settingscompanyname.item(i)
+            companyname_list.append(ui.list_settingscompanyname.item(i).text())
+            #f.write(companyname.text()+'\n')
+        
+        
+        #companyname = ui.list_settingscompanyname.item(max(range(rowcount)))
+        # f.write(companyname.text())
+        # f.close()
+        settings_data["qymc"] = companyname_list
+        
+        #保存存储路径
+        saving_path = ui.lineEdit_savingpath.text()
+        settings_data["savingpath"] = saving_path
+        
+        
+        #将data写入文件
+        with open("settings.json","w+") as f:
+            json.dump(settings_data,f)
+        
+        
         #清空
         ui.combobox_companyname.clear()
         ui.list_settingscompanyname.clear()
@@ -79,9 +98,9 @@ class buttonaction():
         
         #搜索页，和请求头
         search_url = "http://sjfw.scjs.net.cn:8001/xxgx/Person/rList.aspx"
-        headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.27'
-        }
+        headers = {'User-Agent': UserAgent().random}
+        #proxies = {'http': '39.130.150.44:80'}
+        print(headers)
         
         #处理每一组搜索条件
         rowcount = ui.list_info.count()
@@ -97,15 +116,18 @@ class buttonaction():
                 'mc': ret_list[1]
             }
             #拿到点击搜索后的页面
-            r1 = requests.post(search_url,headers=headers)
+            s = requests.Session()
+            s.cookies.clear()
+            r1 = requests.post(search_url,data=data,headers=headers)
             
             #获取个人网页网址
             #使用bs解析html
             bs1 = BeautifulSoup(r1.text)
             #对是否搜索成功进行判断
             #进行状态码判断
+            print(r1)
             if r1.status_code != 200:
-                ui.label_info.setText('搜索网页返回状态：'+r1.status_code)
+                ui.label_info.setText('搜索网页返回状态：'+ str(r1.status_code))
                 continue
             #对返回搜索返回结果判断
             ret_tags = bs1.select('.cursorDefault > tr + tr > td')
@@ -121,13 +143,21 @@ class buttonaction():
             #拼接截图页网址
             screenshot_url = "http://sjfw.scjs.net.cn:8001/xxgx/Person/" + url_tag[0].attrs['href']
             #生成目录文件
-            dir_name = r'./'+ret_list[0]+'/'+ret_list[1]
+            dir_name = ui.lineEdit_savingpath.text()+ret_list[0]+'/'+ret_list[1]
             tab_info_tag = bs1.select('.datas_tabs > .activeTinyTab > a > span')
             tab_name = tab_info_tag[0].text[0:4]
             pic_name = ret_list[1]+'-'+tab_name+'.png'
             
             doScreenShot(screenshot_url,dir_name,pic_name)
-            
+        
+    #选择储存路径
+    @pyqtSlot()
+    def chooseSavingPath(ui:Ui_MyMainWindow,parentWindow):
+        directory = QFileDialog().getExistingDirectory(parentWindow,"选取文件夹","./")
+        ui.lineEdit_savingpath.setText(directory)
+        
+
+#做截图      
 def doScreenShot(url, dir_name,pic_name):
     #edgedriver目录
     chromedriver = r"./chromedriver"
@@ -161,6 +191,33 @@ def doScreenShot(url, dir_name,pic_name):
     driver.close()         
     
             
-        
+#伪装IP
+def get_fakeIP():
+    ip_page = requests.get(  # 获取200条IP
+        'http://www.89ip.cn/tqdl.html?num=60&address=中国&kill_address=&port=&kill_port=&isp=')
+    proxies_list = re.findall(
+        r'(25[0-5]|2[0-4]\d|[0-1]\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|[0-1]\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|[0-1]\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|[0-1]\d{2}|[1-9]?\d)(:-?[1-9]\d*)',
+        ip_page.text)
+
+    # 转换proxies_list的元素为list,最初为'tuple'元组格式
+    proxies_list = list(map(list, proxies_list))
+
+    # 格式化ip  ('112', '111', '217', '188', ':9999')  --->  112.111.217.188:9999
+    for u in range(0, len(proxies_list)):
+        # 通过小数点来连接为字符
+        proxies_list[u] = '.'.join(proxies_list[u])
+        # 用rindex()查找最后一个小数点的位置，
+        index = proxies_list[u].rindex('.')
+        # 将元素转换为list格式
+        proxies_list[u] = list(proxies_list[u])
+        # 修改位置为index的字符为空白（去除最后一个小数点）
+        proxies_list[u][index] = ''
+        # 重新通过空白符连接为字符
+        proxies_list[u] = ''.join(proxies_list[u])
+
+    # proxies = {'协议':'协议://IP:端口号'}
+    # 'https':'https://59.172.27.6:38380'
+    
+    return str(random.choice(proxies_list))
         
         

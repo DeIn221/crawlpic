@@ -27,6 +27,8 @@ class parentWindow(QMainWindow):
         self.main_ui.btn_savesettings.clicked.connect(lambda: buttonaction.saveSettings(self.main_ui))
         self.main_ui.btn_delsettingcompanyname.clicked.connect(lambda: buttonaction.delSettingCompanyName(self.main_ui))
         self.main_ui.btn_start.clicked.connect(lambda: buttonaction.startScreenShot(self.main_ui))
+        self.main_ui.btn_choosesavingpath.clicked.connect(lambda: buttonaction.chooseSavingPath(self.main_ui,self))
+        
 
 class childWindow(QDialog):
     def __init__(self) -> None:
@@ -41,7 +43,6 @@ def bindingWindowByButton(window:parentWindow,child:childWindow):
     window.main_ui.btn_addsettingcompanyname.clicked.connect(child.show)
     #绑定信号和槽
     child.child_ui.btn_ok.clicked.connect(lambda: buttonaction.addSettingCompanyName(window.main_ui,child.child_ui,child))
-
 
 if __name__ == '__main__':
     #创建一个QApplication实例
