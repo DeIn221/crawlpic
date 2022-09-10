@@ -26,8 +26,9 @@ class parentWindow(QMainWindow):
         self.main_ui.btn_addinfo.clicked.connect(lambda: buttonaction.addInformation(self.main_ui))
         self.main_ui.btn_savesettings.clicked.connect(lambda: buttonaction.saveSettings(self.main_ui))
         self.main_ui.btn_delsettingcompanyname.clicked.connect(lambda: buttonaction.delSettingCompanyName(self.main_ui))
-        self.main_ui.btn_start.clicked.connect(lambda: buttonaction.startScreenShot(self.main_ui))
+        self.main_ui.btn_start.clicked.connect(lambda: buttonaction.startScreenShot(self.main_ui,self))
         self.main_ui.btn_choosesavingpath.clicked.connect(lambda: buttonaction.chooseSavingPath(self.main_ui,self))
+        self.main_ui.btn_removeinfolist.clicked.connect(lambda: buttonaction.removeListinfo(self.main_ui))
         
 
 class childWindow(QDialog):

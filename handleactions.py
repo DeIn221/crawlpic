@@ -94,7 +94,7 @@ class buttonaction():
         ui.loadsettings()
     #开始截图
     @pyqtSlot()
-    def startScreenShot(ui:Ui_MyMainWindow):
+    def startScreenShot(ui:Ui_MyMainWindow,parentWindow):
         
         #搜索页，和请求头
         search_url = "http://sjfw.scjs.net.cn:8001/xxgx/Person/rList.aspx"
@@ -107,6 +107,9 @@ class buttonaction():
         
         #对每一组进行截图
         for i in range(rowcount):
+            ui.progressBar.reset()
+            ui.progressBar.setValue(0)
+            ui.progressBar.setValue(int((1/4)*100))
             str = ui.list_info.item(i).text()
             ret_list = str.split(',')
             #ret_list[0]是企业名称，[1]是人员名称
@@ -126,6 +129,7 @@ class buttonaction():
             #对是否搜索成功进行判断
             #进行状态码判断
             print(r1)
+            ui.progressBar.setValue(int((2/4)*100))
             if r1.status_code != 200:
                 ui.label_info.setText('搜索网页返回状态：'+ str(r1.status_code))
                 continue
@@ -143,18 +147,41 @@ class buttonaction():
             #拼接截图页网址
             screenshot_url = "http://sjfw.scjs.net.cn:8001/xxgx/Person/" + url_tag[0].attrs['href']
             #生成目录文件
-            dir_name = ui.lineEdit_savingpath.text()+ret_list[0]+'/'+ret_list[1]
-            tab_info_tag = bs1.select('.datas_tabs > .activeTinyTab > a > span')
+            headers1 = {'User-Agent': UserAgent().random}
+            r2 = requests.get(screenshot_url,headers=headers1)
+            dir_name = ui.lineEdit_savingpath.text()+'/'+ret_list[0]+'/'+ret_list[1]+'/'
+            print(r2)
+            ui.progressBar.setValue(int((3/4)*100))
+            if r2.status_code != 200:
+                ui.label_info.setText('搜索网页返回状态：'+ str(r1.status_code))
+                continue
+            
+            bs2 = BeautifulSoup(r2.text)
+            tab_info_tag = bs2.select('.datas_tabs > .activeTinyTab > a > span')
+            print(tab_info_tag[0])
             tab_name = tab_info_tag[0].text[0:4]
             pic_name = ret_list[1]+'-'+tab_name+'.png'
             
+            ui.progressBar.setValue(int((4/4)*100))
+            print(dir_name)
             doScreenShot(screenshot_url,dir_name,pic_name)
+        
+        QMessageBox.information(parentWindow,'提示','截图完了')
         
     #选择储存路径
     @pyqtSlot()
     def chooseSavingPath(ui:Ui_MyMainWindow,parentWindow):
         directory = QFileDialog().getExistingDirectory(parentWindow,"选取文件夹","./")
         ui.lineEdit_savingpath.setText(directory)
+    
+    #移除选择的list_info
+    @pyqtSlot()
+    def removeListinfo(ui:Ui_MyMainWindow):
+        indexs = ui.list_info.selectedIndexes()
+        if len(indexs) > 0:
+            item = ui.list_info.takeItem(indexs[0].row())
+            ui.list_info.removeItemWidget(item)
+        
         
 
 #做截图      
@@ -174,14 +201,14 @@ def doScreenShot(url, dir_name,pic_name):
     #driver.create_options().add_argument("headless")
     #控制浏览器写入并转到链接
     driver.get(url)
-    time.sleep(1)
+    #time.sleep(0.5)
     #接下来是全屏的关键，用js获取页面的宽高，如果有其他需要用js的部分也可以用这个方法
     width = driver.execute_script("return document.documentElement.scrollWidth")
     height = driver.execute_script("return document.documentElement.scrollHeight")
     print(width,height)
     #将浏览器的宽高设置成刚刚获取的宽高
     driver.set_window_size(width,height)
-    time.sleep(1)
+    #time.sleep(0.5)
     #截图并关掉浏览器
     if os.path.exists(dir_name):
         driver.save_screenshot(dir_name+pic_name)
